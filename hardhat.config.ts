@@ -19,6 +19,7 @@ import './tasks/scenario/task.ts';
 import relationConfigMap from './deployments/relations';
 import goerliRelationConfigMap from './deployments/goerli/usdc/relations';
 import mumbaiRelationConfigMap from './deployments/mumbai/usdc/relations';
+import optimismRelationConfigMap from './deployments/optimism/usdc/relations';
 
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   for (const account of await hre.ethers.getSigners()) console.log(account.address);
@@ -188,6 +189,9 @@ const config: HardhatUserConfig = {
       },
       mumbai: {
         usdc: mumbaiRelationConfigMap
+      },
+      optimism: {
+        usdc: optimismRelationConfigMap
       }
     },
   },
