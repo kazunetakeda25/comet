@@ -73,6 +73,11 @@ const networkConfigs: NetworkConfig[] = [
   { network: 'ropsten', chainId: 3 },
   { network: 'rinkeby', chainId: 4 },
   { network: 'goerli', chainId: 5 },
+  {
+    network: 'optimism',
+    chainId: 10,
+    url: `https://optimism-mainnet.infura.io/v3/${INFURA_KEY}`
+  },
   { network: 'kovan', chainId: 42 },
   {
     network: 'polygon',
@@ -220,6 +225,12 @@ const config: HardhatUserConfig = {
         network: 'mumbai',
         deployment: 'usdc',
         auxiliaryBase: 'goerli'
+      },
+      {
+        name: 'optimism',
+        network: 'optimism',
+        deployment: 'usdc',
+        auxiliaryBase: 'mainnet'
       }
     ],
   },
