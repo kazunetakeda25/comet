@@ -9,6 +9,12 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const LINK = await deploymentManager.existing('LINK', '0x514910771af9ca656af840dff83e8264ecf986ca');
   const UNI = await deploymentManager.existing('UNI', '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984');
 
+  // Mainnet -> Optimism bridge contract
+  const optimismL1CrossDomainMessenger = await deploymentManager.existing(
+    'optimismL1CrossDomainMessenger',
+    '0x25ace71c97B33Cc4729CF772ae268934F7ab5fA1'
+  );
+
   // Deploy all Comet-related contracts
   const deployed = await deployComet(deploymentManager, deploySpec);
   const { comet } = deployed;
@@ -20,5 +26,9 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
     [await comet.governor(), WETH.address]
   );
 
-  return { ...deployed, bulker };
+  return {
+    ...deployed,
+    bulker,
+    optimismL1CrossDomainMessenger
+  };
 }
