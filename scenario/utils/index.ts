@@ -13,6 +13,7 @@ import { debug } from '../../plugins/deployment_manager/Utils';
 import { COMP_WHALES } from '../../src/deploy';
 import relayMessage from './relayMessage';
 import { mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
+import { isBridgeProposal } from './isBridgeProposal';
 
 export { mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp };
 
@@ -389,5 +390,11 @@ export async function executeOpenProposalAndRelay(
 ) {
 
   await executeOpenProposal(governanceDeploymentManager, openProposal);
-  await relayMessage(governanceDeploymentManager, bridgeDeploymentManager);
+
+  if (await isBridgeProposal(governanceDeploymentManager, bridgeDeploymentManager, openProposal)) {
+    await relayMessage(governanceDeploymentManager, bridgeDeploymentManager);
+  } else {
+    console.log(`[${governanceDeploymentManager.network} -> ${bridgeDeploymentManager.network}] Proposal ${openProposal.id} doesn't target bridge; not relaying`);
+    return;
+  }
 }
