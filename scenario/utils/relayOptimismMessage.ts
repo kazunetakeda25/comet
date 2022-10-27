@@ -3,7 +3,7 @@ import { impersonateAddress } from '../../plugins/scenario/utils';
 import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
 import { Event } from 'ethers';
 
-export default async function relayPolygonMessage(
+export default async function relayOptimismMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
 ) {
@@ -11,6 +11,7 @@ export default async function relayPolygonMessage(
   const EVENT_LISTENER_TIMEOUT = 60000;
 
   // const stateSender = await governanceDeploymentManager.getContractOrThrow('stateSender');
+  const optimismL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow('optimismL1CrossDomainMessenger');
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
   // const fxChild = await bridgeDeploymentManager.getContractOrThrow('fxChild');
 
