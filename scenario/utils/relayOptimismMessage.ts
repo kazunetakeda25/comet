@@ -10,26 +10,32 @@ export default async function relayOptimismMessage(
   // const MUMBAI_RECEIVER_ADDRESSS = '0x0000000000000000000000000000000000001001';
   const EVENT_LISTENER_TIMEOUT = 60000;
 
-  // const stateSender = await governanceDeploymentManager.getContractOrThrow('stateSender');
   const optimismL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow('optimismL1CrossDomainMessenger');
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
-  // const fxChild = await bridgeDeploymentManager.getContractOrThrow('fxChild');
 
-  // // listen on events on the fxRoot contract
-  // const stateSyncedListenerPromise = new Promise((resolve, reject) => {
-  //   const filter = stateSender.filters.StateSynced();
+  // listen on events on the OptimismL1CrossDomainMessenger
+  const sentMessageListenerPromise = new Promise(async (resolve, reject) => {
+    const filter = {
+      address: optimismL1CrossDomainMessenger.address,
+      topics: [
+        governanceDeploymentManager.hre.ethers.utils.id(
+          "SentMessage(address,address,bytes,uint256,uint256)"
+        ),
+      ]
+    };
 
-  //   governanceDeploymentManager.hre.ethers.provider.on(filter, (log) => {
-  //     resolve(log);
-  //   });
+    governanceDeploymentManager.hre.ethers.provider.on(filter, (log) => {
+      resolve(log);
+    });
 
-  //   setTimeout(() => {
-  //     reject(new Error('StateSender.StateSynced event listener timed out'));
-  //   }, EVENT_LISTENER_TIMEOUT);
-  // });
+    setTimeout(() => {
+      reject(new Error('OptimismL1CrossDomainMessenger.SentMessage event listener timed out'));
+    }, EVENT_LISTENER_TIMEOUT);
+  });
 
-  // const stateSyncedEvent = await stateSyncedListenerPromise as Event;
-  // const { args: { data: stateSyncedData } } = stateSender.interface.parseLog(stateSyncedEvent);
+  const sentMessageEvent = await sentMessageListenerPromise as Event;
+  const events = optimismL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
+  const { args: { data: stateSyncedData } } = events;
 
   // const mumbaiReceiverSigner = await impersonateAddress(bridgeDeploymentManager, MUMBAI_RECEIVER_ADDRESSS);
 
