@@ -12,16 +12,15 @@ export default async function relayOptimismMessage(
 
   const optimismL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow('optimismL1CrossDomainMessenger');
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
+  const l2CrossDomainMessenger = await bridgeDeploymentManager.getContractOrThrow('l2CrossDomainMessenger');
+
+  const { id, Interface } = governanceDeploymentManager.hre.ethers.utils;
 
   // listen on events on the OptimismL1CrossDomainMessenger
   const sentMessageListenerPromise = new Promise(async (resolve, reject) => {
     const filter = {
       address: optimismL1CrossDomainMessenger.address,
-      topics: [
-        governanceDeploymentManager.hre.ethers.utils.id(
-          "SentMessage(address,address,bytes,uint256,uint256)"
-        ),
-      ]
+      topics: [id("SentMessage(address,address,bytes,uint256,uint256)")]
     };
 
     governanceDeploymentManager.hre.ethers.provider.on(filter, (log) => {
@@ -34,12 +33,26 @@ export default async function relayOptimismMessage(
   });
 
   const sentMessageEvent = await sentMessageListenerPromise as Event;
-  const events = optimismL1CrossDomainMessenger.interface.parseLog(sentMessageEvent);
-  const { args: { data: stateSyncedData } } = events;
 
-  // const mumbaiReceiverSigner = await impersonateAddress(bridgeDeploymentManager, MUMBAI_RECEIVER_ADDRESSS);
+  const iface = new Interface([
+    "event SentMessage(address indexed target, address sender, bytes message, uint256 messageNonce, uint256 gasLimit)"
+  ]);
 
-  // await setNextBaseFeeToZero(bridgeDeploymentManager);
+  const events = iface.parseLog(sentMessageEvent);
+  const { args: { target, sender, message, messageNonce, gasLimit } } = events;
+
+  const translatedAddress = "0x" + (
+    BigInt(optimismL1CrossDomainMessenger.address) +
+    BigInt("0x1111000000000000000000000000000000001111")
+  ).toString(16);
+
+  const translatedAddressSigner = await impersonateAddress(bridgeDeploymentManager, translatedAddress);
+
+  await setNextBaseFeeToZero(bridgeDeploymentManager);
+  const relayMessageTxn = await (
+    await l2CrossDomainMessenger.connect(translatedAddressSigner).relayMessage(target, sender, message, messageNonce)
+  ).wait();
+
   // const onStateReceiveTxn = await (
   //   await fxChild.connect(mumbaiReceiverSigner).onStateReceive(
   //     123,             // stateId
