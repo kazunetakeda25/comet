@@ -7,20 +7,19 @@ export default async function relayOptimismMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
 ) {
-  // const MUMBAI_RECEIVER_ADDRESSS = '0x0000000000000000000000000000000000001001';
   const EVENT_LISTENER_TIMEOUT = 60000;
 
   const optimismL1CrossDomainMessenger = await governanceDeploymentManager.getContractOrThrow('optimismL1CrossDomainMessenger');
   const bridgeReceiver = await bridgeDeploymentManager.getContractOrThrow('bridgeReceiver');
   const l2CrossDomainMessenger = await bridgeDeploymentManager.getContractOrThrow('l2CrossDomainMessenger');
 
-  const { id, Interface } = governanceDeploymentManager.hre.ethers.utils;
+  const { id: functionIdentifier, Interface } = governanceDeploymentManager.hre.ethers.utils;
 
   // listen on events on the OptimismL1CrossDomainMessenger
   const sentMessageListenerPromise = new Promise(async (resolve, reject) => {
     const filter = {
       address: optimismL1CrossDomainMessenger.address,
-      topics: [id("SentMessage(address,address,bytes,uint256,uint256)")]
+      topics: [functionIdentifier("SentMessage(address,address,bytes,uint256,uint256)")]
     };
 
     governanceDeploymentManager.hre.ethers.provider.on(filter, (log) => {
@@ -50,24 +49,22 @@ export default async function relayOptimismMessage(
 
   await setNextBaseFeeToZero(bridgeDeploymentManager);
   const relayMessageTxn = await (
-    await l2CrossDomainMessenger.connect(translatedAddressSigner).relayMessage(target, sender, message, messageNonce)
+    await l2CrossDomainMessenger.connect(translatedAddressSigner).relayMessage(
+      target,
+      sender,
+      message,
+      messageNonce,
+      { gasPrice: 0 }
+    )
   ).wait();
 
-  // const onStateReceiveTxn = await (
-  //   await fxChild.connect(mumbaiReceiverSigner).onStateReceive(
-  //     123,             // stateId
-  //     stateSyncedData, // _data
-  //     { gasPrice: 0 }
-  //   )
-  // ).wait();
+  const proposalCreatedEvent = relayMessageTxn.events.find(event => event.address === bridgeReceiver.address);
+  const { args: { id, eta } } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
 
-  // const proposalCreatedEvent = onStateReceiveTxn.events.find(event => event.address === bridgeReceiver.address);
-  // const { args: { id, eta } } = bridgeReceiver.interface.parseLog(proposalCreatedEvent);
+  // fast forward l2 time
+  await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
 
-  // // fast forward l2 time
-  // await setNextBlockTimestamp(bridgeDeploymentManager, eta.toNumber() + 1);
-
-  // // execute queued proposal
-  // await setNextBaseFeeToZero(bridgeDeploymentManager);
-  // await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
+  // execute queued proposal
+  await setNextBaseFeeToZero(bridgeDeploymentManager);
+  await bridgeReceiver.executeProposal(id, { gasPrice: 0 });
 }
