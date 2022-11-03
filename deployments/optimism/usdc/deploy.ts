@@ -3,6 +3,7 @@ import { DeploySpec, deployComet } from '../../../src/deploy';
 
 const secondsPerDay = 24 * 60 * 60;
 
+const CROSS_DOMAIN_MESSENGER = "0x4200000000000000000000000000000000000007";
 const MAINNET_TIMELOCK = '0x6d903f6003cca6255d85cca4d3b5e5146dc33925';
 
 export default async function deploy(deploymentManager: DeploymentManager, deploySpec: DeploySpec): Promise<Deployed> {
@@ -27,7 +28,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   const bridgeReceiver = await deploymentManager.deploy(
     'bridgeReceiver',
     'bridges/optimism/OptimismBridgeReceiver.sol',
-    []
+    [CROSS_DOMAIN_MESSENGER] // crossDomainMessenger
   );
 
   // Deploy Local Timelock
