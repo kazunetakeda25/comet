@@ -20,7 +20,7 @@ export default async function deploy(deploymentManager: DeploymentManager, deplo
   // L2CrossDomainMessenger
   const l2CrossDomainMessenger = await deploymentManager.existing(
     'l2CrossDomainMessenger',
-    '0x4200000000000000000000000000000000000007',
+    CROSS_DOMAIN_MESSENGER,
     'optimism'
   );
 
