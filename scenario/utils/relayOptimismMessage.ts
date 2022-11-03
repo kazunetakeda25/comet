@@ -12,7 +12,7 @@ an L1 address to its offset, L2 equivalent.
 https://optimistic.etherscan.io/address/0x4200000000000000000000000000000000000007#code
 */
 function applyL1ToL2Alias(address: string) {
-  const offset = BigInt("0x1111000000000000000000000000000000001111");
+  const offset = BigInt('0x1111000000000000000000000000000000001111');
   return `0x${(BigInt(address) + offset).toString(16)}`;
 }
 
@@ -29,10 +29,10 @@ export default async function relayOptimismMessage(
   const { id: functionIdentifier, Interface } = governanceDeploymentManager.hre.ethers.utils;
 
   // listen on events on the OptimismL1CrossDomainMessenger
-  const sentMessageListenerPromise = new Promise(async (resolve, reject) => {
+  const sentMessageListenerPromise = new Promise((resolve, reject) => {
     const filter = {
       address: optimismL1CrossDomainMessenger.address,
-      topics: [functionIdentifier("SentMessage(address,address,bytes,uint256,uint256)")]
+      topics: [functionIdentifier('SentMessage(address,address,bytes,uint256,uint256)')]
     };
 
     governanceDeploymentManager.hre.ethers.provider.on(filter, (log) => {
@@ -47,11 +47,11 @@ export default async function relayOptimismMessage(
   const sentMessageEvent = await sentMessageListenerPromise as Event;
 
   const eventInterface = new Interface([
-    "event SentMessage(address indexed target, address sender, bytes message, uint256 messageNonce, uint256 gasLimit)"
+    'event SentMessage(address indexed target, address sender, bytes message, uint256 messageNonce, uint256 gasLimit)'
   ]);
 
   const events = eventInterface.parseLog(sentMessageEvent);
-  const { args: { target, sender, message, messageNonce, gasLimit } } = events;
+  const { args: { target, sender, message, messageNonce } } = events;
 
   const aliasedSigner = await impersonateAddress(
     bridgeDeploymentManager,
