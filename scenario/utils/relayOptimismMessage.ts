@@ -3,6 +3,19 @@ import { impersonateAddress } from '../../plugins/scenario/utils';
 import { setNextBaseFeeToZero, setNextBlockTimestamp } from './hreUtils';
 import { Event } from 'ethers';
 
+/*
+The Optimism relayer applies an offset to the message sender.
+
+applyL1ToL2Alias mimics the AddressAliasHelper.applyL1ToL2Alias fn that converts
+an L1 address to its offset, L2 equivalent.
+
+https://optimistic.etherscan.io/address/0x4200000000000000000000000000000000000007#code
+*/
+function applyL1ToL2Alias(address: string) {
+  const offset = BigInt("0x1111000000000000000000000000000000001111");
+  return `0x${(BigInt(address) + offset).toString(16)}`;
+}
+
 export default async function relayOptimismMessage(
   governanceDeploymentManager: DeploymentManager,
   bridgeDeploymentManager: DeploymentManager,
@@ -40,16 +53,14 @@ export default async function relayOptimismMessage(
   const events = eventInterface.parseLog(sentMessageEvent);
   const { args: { target, sender, message, messageNonce, gasLimit } } = events;
 
-  const translatedAddress = "0x" + (
-    BigInt(optimismL1CrossDomainMessenger.address) +
-    BigInt("0x1111000000000000000000000000000000001111")
-  ).toString(16);
-
-  const translatedAddressSigner = await impersonateAddress(bridgeDeploymentManager, translatedAddress);
+  const aliasedSigner = await impersonateAddress(
+    bridgeDeploymentManager,
+    applyL1ToL2Alias(optimismL1CrossDomainMessenger.address)
+  );
 
   await setNextBaseFeeToZero(bridgeDeploymentManager);
   const relayMessageTxn = await (
-    await l2CrossDomainMessenger.connect(translatedAddressSigner).relayMessage(
+    await l2CrossDomainMessenger.connect(aliasedSigner).relayMessage(
       target,
       sender,
       message,
