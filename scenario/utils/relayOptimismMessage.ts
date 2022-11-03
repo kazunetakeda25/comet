@@ -33,11 +33,11 @@ export default async function relayOptimismMessage(
 
   const sentMessageEvent = await sentMessageListenerPromise as Event;
 
-  const iface = new Interface([
+  const eventInterface = new Interface([
     "event SentMessage(address indexed target, address sender, bytes message, uint256 messageNonce, uint256 gasLimit)"
   ]);
 
-  const events = iface.parseLog(sentMessageEvent);
+  const events = eventInterface.parseLog(sentMessageEvent);
   const { args: { target, sender, message, messageNonce, gasLimit } } = events;
 
   const translatedAddress = "0x" + (
