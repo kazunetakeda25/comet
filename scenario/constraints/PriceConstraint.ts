@@ -2,8 +2,7 @@ import { Constraint } from '../../plugins/scenario';
 import { CometContext } from '../context/CometContext';
 import { expect } from 'chai';
 import { Requirements } from './Requirements';
-import { exp } from '../../test/helpers';
-import { ComparisonOp, getAssetFromName, parseAmount } from '../utils';
+import { getAssetFromName } from '../utils';
 
 export class PriceConstraint<T extends CometContext, R extends Requirements> implements Constraint<T, R> {
   async solve(requirements: R, _initialContext: T) {

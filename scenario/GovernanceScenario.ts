@@ -6,7 +6,7 @@ import { FaucetToken } from '../build/types';
 import { calldata } from '../src/deploy';
 import { COMP_WHALES } from '../src/deploy';
 import { impersonateAddress } from '../plugins/scenario/utils';
-import { isBridgedDeployment, fastL2GovernanceExecute, matchesDeployment } from './utils';
+import { isBridgedDeployment, fastL2GovernanceExecute } from './utils';
 
 scenario('upgrade Comet implementation and initialize', {filter: async (ctx) => !isBridgedDeployment(ctx)}, async ({ comet, configurator, proxyAdmin }, context) => {
   // For this scenario, we will be using the value of LiquidatorPoints.numAbsorbs for address ZERO to test that initialize has been called
