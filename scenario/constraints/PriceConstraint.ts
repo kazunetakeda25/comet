@@ -22,6 +22,23 @@ export class PriceConstraint<T extends CometContext, R extends Requirements> imp
   }
 
   async check(requirements: R, context: T) {
-    // XXX
+    const prices = requirements.prices;
+    if (prices !== undefined) {
+      const comet = await context.getComet();
+      const baseToken = await comet.baseToken();
+
+      for (const [assetAlias, price] of Object.entries(prices)) {
+        const cometAsset = await getAssetFromName(assetAlias, context);
+        if (cometAsset.address === baseToken) {
+          const baseTokenPriceFeed = await comet.baseTokenPriceFeed();
+          const cometPrice = await comet.getPrice(baseTokenPriceFeed);
+          expect(cometPrice).to.eq(price * 1e8);
+        } else {
+          const assetInfo = await comet.getAssetInfoByAddress(cometAsset.address);
+          const cometPrice = await comet.getPrice(assetInfo.priceFeed);
+          expect(cometPrice).to.eq(price * 1e8);
+        }
+      }
+    }
   }
 }
