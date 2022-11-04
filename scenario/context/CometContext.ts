@@ -13,6 +13,7 @@ import {
   VerifyMigrationConstraint,
   ProposalConstraint,
   FilterConstraint,
+  PriceConstraint
 } from '../constraints';
 import CometActor from './CometActor';
 import CometAsset from './CometAsset';
@@ -34,7 +35,7 @@ import { sourceTokens } from '../../plugins/scenario/utils/TokenSourcer';
 import { ProtocolConfiguration, deployComet, COMP_WHALES } from '../../src/deploy';
 import { AddressLike, getAddressFromNumber, resolveAddress } from './Address';
 import { Requirements } from '../constraints/Requirements';
-import { fastGovernanceExecute, mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from '../utils';
+import { fastGovernanceExecute, getAssetFromName, mineBlocks, setNextBaseFeeToZero, setNextBlockTimestamp } from '../utils';
 
 export type ActorMap = { [name: string]: CometActor };
 export type AssetMap = { [name: string]: CometAsset };
@@ -141,6 +142,36 @@ export class CometContext {
     debug('Upgraded comet...');
 
     return this;
+  }
+
+  async updatePriceFeeds(newPrices: Record<string, number>) {
+    const comet = await this.getComet();
+    const baseToken = await comet.baseToken();
+
+    const newPriceFeeds: Record<string, string> = {};
+    for (const asset in newPrices) {
+      // XXX use the correct alias
+      const priceFeed = await this.world.deploymentManager.deploy(
+        `${asset}:priceFeed`,
+        'test/SimplePriceFeed.sol',
+        [newPrices[asset] * 1e8, 8]
+      );
+      newPriceFeeds[asset] = priceFeed.address;
+    }
+
+    const gov = await this.world.impersonateAddress(await comet.governor(), 10n ** 18n);
+    const cometAdmin = (await this.getCometAdmin()).connect(gov);
+    const configurator = (await this.getConfigurator()).connect(gov);
+    for (const [assetAddress, priceFeedAddress] of Object.entries(newPriceFeeds)) {
+      if (assetAddress === baseToken) {
+        debug(`Setting base token price feed to ${priceFeedAddress}`);
+        await configurator.setBaseTokenPriceFeed(comet.address, priceFeedAddress);
+      } else {
+        debug(`Setting ${assetAddress} price feed to ${priceFeedAddress}`);
+        await configurator.updateAssetPriceFeed(comet.address, assetAddress, priceFeedAddress);
+      }
+    }
+    await cometAdmin.deployAndUpgradeTo(configurator.address, comet.address);
   }
 
   async bumpSupplyCaps(supplyAmountPerAsset: Record<string, bigint>) {
@@ -371,6 +402,7 @@ export const constraints = [
   new CometBalanceConstraint(),
   new TokenBalanceConstraint(),
   new UtilizationConstraint(),
+  new PriceConstraint()
 ];
 
 export const scenario = buildScenarioFn<CometContext, CometProperties, Requirements>(getInitialContext, getContextProperties, forkContext, constraints);
