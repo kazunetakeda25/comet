@@ -10,6 +10,7 @@ import {
   getAssets,
   Asset
 } from './liquidateUnderwaterBorrowers';
+import googleCloudLog, { LogSeverity } from './googleCloudLog';
 
 const loopDelay = 5000;
 const loopsUntilUpdateAssets = 1000;
@@ -25,6 +26,11 @@ async function main() {
   }
 
   const network = hre.network.name;
+
+  googleCloudLog(
+    LogSeverity.ALERT,
+    `Liquidation Bot started {network: ${network}, deployment: ${deployment}, liquidatorAddress: ${liquidatorAddress}}`
+  );
 
   const dm = new DeploymentManager(
     network,
